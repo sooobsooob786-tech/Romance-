@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>جادوی عشق - نادیه جان</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lalezar&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050005;
+            background: radial-gradient(circle at center, #1a0b1a 0%, #000000 100%);
+            font-family: 'Lalezar', cursive;
+            touch-action: none;
+            user-select: none;
+        }
+        #instruction {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 215, 0, 0.9);
+            font-size: 1.2rem;
+            pointer-events: none;
+            text-align: center;
+            user-select: none;
+            transition: opacity 0.5s;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            width: 90%;
+            line-height: 1.8;
+            z-index: 10;
+        }
+        #font-loader {
+            font-family: 'Lalezar';
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="instruction">
+        خط بکشید: قلب‌های "نادیه جان"<br>
+        <span style="color: #ff66b2;">دایره ⭕: دسته گل همسر</span><br>
+        <span style="color: #ff3366;">قلب ❤️: بوسه واقعی و غنچه‌ای 💋</span><br>
+        <span style="color: #00ffff;">۰.۵ ثانیه نگه دارید: انفجار بزرگ 💥</span>
+    </div>
+    
+    <div id="font-loader">همسرم نادیه جان دوستت دارم</div> 
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- 1. SETUP SCENE ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 50;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        // --- 2. ASSETS & TEXTURES (Restored High Quality) ---
+        
+        const romanticPhrases = [
+            "عشق جاودانه من", "آرامش جانم", "زیباترین اتفاق زندگیم",
+            "دلیل ضربان قلبم", "ماه شب‌های تارم", "همدم همیشگی من",
+            "تو نهایت آرزوی منی", "نفس و جان من", "ضربان قلب من",
+            "دنیای رنگی من", "فرشته زمینی من", "عزیزتر از جانم"
+        ];
+
+        const wifeQuotes = [
+            "همسرم، نور زندگیم", "ملکه قلب من", "وجودت آرامش محض",
+            "همسرم، دنیای من", "زیباترین انتخابم", "همسرم خیلی دوستت دارم"
+        ];
+
+        const heartPalette = [
+            { color: "#ff0040", name: "Red" },
+            { color: "#0044cc", name: "Royal Blue" },
+            { color: "#800080", name: "Purple" },
+            { color: "#ffffff", name: "White" },
+            { color: "#33ccff", name: "Cyan" },
+            { color: "#ff66b2", name: "Pink" },
+            { color: "#ffd700", name: "Yellow" }
+        ];
+        let currentHeartColorIndex = 0;
+
+        const flowerStyles = [
+            { type: 'rose', colors: ["#ff0000", "#ff3366"], leaf: true },
+            { type: 'sunflower', colors: ["#ffcc00", "#ffaa00"], leaf: true },
+            { type: 'tulip', colors: ["#ff00ff", "#cc00cc", "#ffffff"], leaf: true },
+            { type: 'fantasy', colors: ["#00ffff", "#0099ff", "#ff00cc"], leaf: false }
+        ];
+        let currentFlowerIndex = 0;
+
+        // Texture Helper
+        function createTexture(type, color = null) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; 
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const cx = 64, cy = 64;
+
+            if (type === 'glow') {
+                const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, 128, 128);
+            } 
+            else if (type === 'star') {
+                ctx.fillStyle = "white";
+                ctx.shadowColor = "white";
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                const spikes = 4;
+                const outerRadius = 50; const innerRadius = 15;
+                let rot = Math.PI / 2 * 3; let x = cx; let y = cy; const step = Math.PI / spikes;
+                ctx.moveTo(cx, cy - outerRadius);
+                for (let i = 0; i < spikes; i++) {
+                    x = cx + Math.cos(rot) * outerRadius; y = cy + Math.sin(rot) * outerRadius; ctx.lineTo(x, y); rot += step;
+                    x = cx + Math.cos(rot) * innerRadius; y = cy + Math.sin(rot) * innerRadius; ctx.lineTo(x, y); rot += step;
+                }
+                ctx.lineTo(cx, cy - outerRadius); ctx.closePath(); ctx.fill();
+            }
+            else if (type === 'flower') {
+                const r = 50;
+                const grad = ctx.createRadialGradient(cx-10, cy-10, 0, cx, cy, r);
+                let mainColor = color || '#ff0066';
+                if (mainColor === 'leaf') {
+                    grad.addColorStop(0, '#66ff66'); grad.addColorStop(1, '#004400');
+                    ctx.fillStyle = grad; ctx.beginPath(); ctx.ellipse(cx, cy, 40, 15, Math.PI/4, 0, Math.PI*2); ctx.fill();
+                    return new THREE.CanvasTexture(canvas);
+                }
+                grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.5, mainColor); grad.addColorStop(1, '#330000');
+                ctx.fillStyle = grad; ctx.beginPath();
+                for(let i=0; i<30; i++) {
+                    const angle = i * 0.6; const radius = i * 1.6;
+                    const x = cx + Math.cos(angle) * radius; const y = cy + Math.sin(angle) * radius;
+                    ctx.arc(x, y, i/2 + 8, 0, Math.PI*2); 
+                }
+                ctx.fill(); ctx.beginPath(); ctx.fillStyle = "#ffffaa"; ctx.arc(cx, cy, 5, 0, Math.PI*2); ctx.fill();
+            }
+            else if (type === 'lips_real') {
+                // Realistic 3D Lips drawing
+                // Gradient for volume
+                let gradUpper = ctx.createLinearGradient(0, cy-30, 0, cy);
+                gradUpper.addColorStop(0, "#ff80aa"); // Highlight top
+                gradUpper.addColorStop(0.5, "#ff0055"); // Mid
+                gradUpper.addColorStop(1, "#990033"); // Shadow bottom of upper lip
+
+                let gradLower = ctx.createLinearGradient(0, cy, 0, cy+40);
+                gradLower.addColorStop(0, "#cc0044"); // Shadow top of lower lip
+                gradLower.addColorStop(0.3, "#ff0055");
+                gradLower.addColorStop(0.6, "#ff6699"); // Highlight center
+                gradLower.addColorStop(1, "#990033");
+
+                ctx.shadowColor = "#ff3366";
+                ctx.shadowBlur = 15;
+
+                // Upper Lip
+                ctx.fillStyle = gradUpper;
+                ctx.beginPath();
+                ctx.moveTo(10, cy);
+                ctx.bezierCurveTo(10, cy-40, cx, cy-50, cx, cy-10); // Cupid bow left
+                ctx.bezierCurveTo(cx, cy-50, 118, cy-40, 118, cy); // Cupid bow right
+                ctx.bezierCurveTo(118, cy+10, 64, cy+20, 10, cy); // Bottom curve
+                ctx.fill();
+
+                // Lower Lip
+                ctx.fillStyle = gradLower;
+                ctx.beginPath();
+                ctx.moveTo(10, cy);
+                ctx.bezierCurveTo(10, cy+50, 118, cy+50, 118, cy);
+                ctx.bezierCurveTo(64, cy+10, 10, cy+10, 10, cy);
+                ctx.fill();
+                
+                // Shine
+                ctx.fillStyle = "rgba(255,255,255,0.5)";
+                ctx.beginPath();
+                ctx.ellipse(35, cy+15, 10, 5, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const glowTexture = createTexture('glow');
+        const starTexture = createTexture('star');
+        // New realistic lips texture
+        const lipsTexture = createTexture('lips_real');
+        
+        // --- RESTORED: 3D Heart Texture with Gradient & "Nadia Jan" ---
+        function createNadiaHeartTexture(hexColor, line1, line2) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            const cx = 256, cy = 256;
+            const scale = 14.0;
+            
+            const r = parseInt(hexColor.slice(1, 3), 16);
+            const g = parseInt(hexColor.slice(3, 5), 16);
+            const b = parseInt(hexColor.slice(5, 7), 16);
+            
+            // Gradient Heart
+            const gradient = ctx.createRadialGradient(cx - 50, cy - 50, 10, cx, cy, 250);
+            gradient.addColorStop(0, `rgb(${Math.min(255, r+100)}, ${Math.min(255, g+100)}, ${Math.min(255, b+100)})`); 
+            gradient.addColorStop(0.4, hexColor); 
+            gradient.addColorStop(1, `rgb(${Math.max(0, r-50)}, ${Math.max(0, g-50)}, ${Math.max(0, b-50)})`); 
+
+            ctx.fillStyle = gradient;
+            ctx.shadowColor = hexColor;
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            for(let i=0; i<=Math.PI*2; i+=0.01) {
+                let x = 16 * Math.pow(Math.sin(i), 3);
+                let y = -(13 * Math.cos(i) - 5 * Math.cos(2*i) - 2 * Math.cos(3*i) - Math.cos(4*i)); 
+                ctx.lineTo(cx + x * scale, cy + y * scale - 30);
+            }
+            ctx.fill();
+
+            // Gloss
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            ctx.beginPath();
+            ctx.ellipse(cx - 60, cy - 80, 40, 20, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.shadowBlur = 5; ctx.shadowColor = "black";
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            const textColor = brightness > 180 ? "#000000" : "#ffffff";
+            const strokeColor = brightness > 180 ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+
+            ctx.fillStyle = textColor; ctx.strokeStyle = strokeColor; ctx.lineWidth = 4;
+            ctx.font = "90px 'Lalezar', sans-serif";
+            ctx.strokeText(line1, 256, 180); ctx.fillText(line1, 256, 180);
+            ctx.font = "50px 'Lalezar', sans-serif";
+            ctx.strokeText(line2, 256, 280); ctx.fillText(line2, 256, 280);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createTextTexture(text) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "rgba(0,0,0,0.8)";
+            ctx.lineWidth = 6; ctx.shadowColor = "black"; ctx.shadowBlur = 10;
+            let fontSize = 70;
+            ctx.font = fontSize + "px 'Lalezar', sans-serif";
+            while (ctx.measureText(text).width > 480 && fontSize > 20) {
+                fontSize -= 5; ctx.font = fontSize + "px 'Lalezar', sans-serif";
+            }
+            ctx.strokeText(text, 256, 128); ctx.fillText(text, 256, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- 3. OBJECT CLASSES ---
+        
+        const particles = [];
+        const floatingObjects = []; 
+
+        class Particle {
+            constructor(x, y, z, h, s, l, speedMult = 1.0) {
+                const isStar = Math.random() > 0.8; 
+                const material = new THREE.SpriteMaterial({
+                    map: isStar ? starTexture : glowTexture,
+                    color: 0xffffff,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    transparent: true,
+                    opacity: 1.0
+                });
+                material.color.setHSL(h, s, l);
+                this.mesh = new THREE.Sprite(material);
+                this.mesh.position.set(x, y, z);
+                // Big particles for explosion
+                const baseSize = isStar ? (Math.random() * 1.5 + 0.5) : (Math.random() * 1.0 + 0.5);
+                this.mesh.scale.setScalar(baseSize * (speedMult > 2 ? 3.0 : 1)); 
+                this.life = 1.0;
+                this.decay = (speedMult > 2) ? (Math.random() * 0.005 + 0.001) : (Math.random() * 0.008 + 0.003); 
+                const speed = 0.1 * speedMult;
+                this.velocity = new THREE.Vector3((Math.random() - 0.5) * speed, (Math.random() - 0.5) * speed, (Math.random() - 0.5) * speed);
+                scene.add(this.mesh);
+            }
+            update() {
+                this.life -= this.decay;
+                this.mesh.position.add(this.velocity);
+                this.mesh.material.opacity = this.life;
+                this.mesh.scale.multiplyScalar(0.96); 
+                return this.life > 0;
+            }
+            dispose() {
+                scene.remove(this.mesh);
+                this.mesh.material.dispose();
+            }
+        }
+
+        class FloatingSymbol {
+            constructor(x, y, z, texture, scale = 20) {
+                const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+                this.mesh = new THREE.Sprite(material);
+                this.mesh.position.set(x, y, z);
+                this.mesh.scale.setScalar(0);
+                this.targetScale = scale; 
+                this.age = 0;
+                this.lifeDuration = 400; 
+                scene.add(this.mesh);
+            }
+            update() {
+                this.age++;
+                this.mesh.position.y += 0.05; 
+                if (this.age < 50) {
+                    const t = this.age / 50;
+                    const s = this.targetScale * (Math.sin(t * Math.PI * 0.5) + (Math.sin(t * Math.PI * 4) * 0.1 * (1-t))); 
+                    this.mesh.scale.setScalar(Math.max(0.1, s));
+                } else if (this.age > this.lifeDuration - 50) {
+                    this.mesh.material.opacity -= 0.02;
+                }
+                return this.age < this.lifeDuration;
+            }
+            dispose() {
+                scene.remove(this.mesh);
+                this.mesh.material.dispose();
+                if(this.mesh.material.map) this.mesh.material.map.dispose();
+            }
+        }
+
+        // --- NEW: Kiss Animation (Pucker & Pop) ---
+        class KissAnim {
+            constructor(x, y, z) {
+                const material = new THREE.SpriteMaterial({ map: lipsTexture, transparent: true, depthWrite: false });
+                this.mesh = new THREE.Sprite(material);
+                this.mesh.position.set(x, y, z);
+                this.mesh.scale.setScalar(0);
+                this.age = 0;
+                this.lifeDuration = 300;
+                scene.add(this.mesh);
+            }
+            update() {
+                this.age++;
+                this.mesh.position.y += 0.02;
+                
+                // Animation Logic
+                if (this.age < 20) {
+                    // 1. Appear
+                    const t = this.age / 20;
+                    this.mesh.scale.setScalar(20 * t);
+                } else if (this.age >= 20 && this.age < 60) {
+                    // 2. Pucker (Squeeze horizontally)
+                    // We simulate pucker by pulsing size slightly smaller
+                    const p = Math.sin((this.age - 20) * 0.2); 
+                    this.mesh.scale.set(15 - p*3, 20 + p*2, 1); // Narrower, taller
+                } else if (this.age === 60) {
+                    // 3. Kiss (POP!)
+                    this.mesh.scale.setScalar(25); 
+                    // Emit hearts
+                    for(let i=0; i<10; i++) {
+                         const h = 0.95; 
+                         const p = new Particle(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, h, 1.0, 0.5, 0.5);
+                         p.velocity.y += 0.1; 
+                         particles.push(p);
+                    }
+                } else {
+                    // 4. Fade
+                    this.mesh.scale.multiplyScalar(0.99);
+                }
+
+                if (this.age > this.lifeDuration - 50) {
+                    this.mesh.material.opacity -= 0.02;
+                }
+                return this.age < this.lifeDuration;
+            }
+            dispose() {
+                scene.remove(this.mesh);
+                this.mesh.material.dispose();
+            }
+        }
+
+        class Bouquet {
+            constructor(x, y, z, styleIndex) {
+                this.group = new THREE.Group();
+                this.group.position.set(x, y, z);
+                const style = flowerStyles[styleIndex];
+                const flowerTextures = style.colors.map(c => createTexture('flower', c));
+                const leafTexture = createTexture('flower', 'leaf');
+                for(let i=0; i<30; i++) {
+                    const tex = flowerTextures[Math.floor(Math.random()*flowerTextures.length)];
+                    const mat = new THREE.SpriteMaterial({ map: tex });
+                    const sprite = new THREE.Sprite(mat);
+                    const u = Math.random(); const v = Math.random();
+                    const theta = 2 * Math.PI * u; const phi = Math.acos(2 * v - 1);
+                    const r = Math.random() * 4.5; 
+                    sprite.position.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta) + 2, r * Math.cos(phi) + 1);
+                    sprite.scale.setScalar(6 + Math.random() * 3);
+                    this.group.add(sprite);
+                }
+                if (style.leaf) {
+                    for(let i=0; i<15; i++) {
+                        const mat = new THREE.SpriteMaterial({ map: leafTexture });
+                        const sprite = new THREE.Sprite(mat);
+                        const theta = Math.random() * Math.PI * 2; const r = 5 + Math.random() * 2; 
+                        sprite.position.set(r * Math.cos(theta), (Math.random() - 0.5) * 4, r * Math.sin(theta));
+                        sprite.scale.setScalar(7 + Math.random() * 2);
+                        this.group.add(sprite);
+                    }
+                }
+                const quote = wifeQuotes[Math.floor(Math.random() * wifeQuotes.length)];
+                const textTex = createTextTexture(quote); 
+                const textMat = new THREE.SpriteMaterial({ map: textTex, transparent: true, depthWrite: false });
+                const textSprite = new THREE.Sprite(textMat);
+                textSprite.position.y = -10; 
+                textSprite.scale.set(30, 15, 1); 
+                this.group.add(textSprite);
+                scene.add(this.group);
+                this.group.scale.setScalar(0);
+                this.age = 0; this.lifeDuration = 600; 
+            }
+            update() {
+                this.age++;
+                this.group.position.y += 0.03; this.group.rotation.y += 0.005; 
+                if (this.age < 60) {
+                    const t = this.age / 60; const s = 1.0 * (Math.sin(t * Math.PI * 0.5) + (Math.sin(t * Math.PI * 6) * 0.05 * (1-t)));
+                    this.group.scale.setScalar(Math.max(0.1, s));
+                } else if (this.age > this.lifeDuration - 50) { this.group.scale.multiplyScalar(0.95); }
+                return this.age < this.lifeDuration;
+            }
+            dispose() {
+   
